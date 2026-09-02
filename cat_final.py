@@ -6,10 +6,26 @@ from qiskit.transpiler import generate_preset_pass_manager
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.widgets import Button
+from qiskit.quantum_info import Statevector
 import os
 import json
 
 THETA = 1.85
+
+def prepare_statevector(angle):
+    qc = QuantumCircuit(1)
+    qc.rx(theta=angle,qubit=0)
+    sv = Statevector(data=qc)
+    return sv
+
+def exact_probabilities(statevector):
+    pr_0 = statevector[0] * np.conj(statevector[0])
+    pr_1 = statevector[1] * np.conj(statevector[1])
+    return pr_0, pr_1
+
+sv = prepare_statevector(angle=THETA)
+prob_0,prob_1 = exact_probabilities(statevector=sv)
+
 
 class NumpyJSONEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -61,7 +77,7 @@ app_state = {
     "current_cat_img": None
 }
 
-# --- 1. Create an empty text object on the figure initially ---
+
 prob_text = fig.text(
     0.5, 0.12, 
     "", 
@@ -97,14 +113,13 @@ def update_dashboard():
         ax_hist.text(bar.get_x() + bar.get_width()/2.0, yval + (max_count * 0.02), 
                      int(yval), ha='center', va='bottom', fontsize=14, fontweight='bold')
 
-    # --- 2. Calculate and update the dynamic probability text here ---
+    #dynamic probability
     if today_total == 0:
         value = 0.0
     else:
         value = data.get("alive_count", 0) / today_total
 
-    # Use .set_text() to update the existing text safely
-    prob_text.set_text(f"Pr(Šťastná kočka) = {value:.4f}")
+    prob_text.set_text(f"Pr(Šťastná kočka) = {value:.4f}\n Exaktní = {prob_1.real:.4f}")
     
     fig.canvas.draw_idle()
 
@@ -155,7 +170,6 @@ def on_cancel_click(event):
 
 btn_cancel.on_clicked(on_cancel_click)
 
-# Initial draw
 update_dashboard()
 
 plt.show() 
